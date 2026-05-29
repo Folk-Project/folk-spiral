@@ -1,0 +1,58 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Folk server entry point for Spiral Framework (extension mode).
+ *
+ * Main thread: boots Spiral, starts Folk server, enters worker loop.
+ * ZTS worker threads: skip server start (bridge state already initialized).
+ */
+
+declare(strict_types=1);
+
+$autoload = $GLOBALS['_composer_autoload_path']
+    ?? dirname(__DIR__, 4) . '/vendor/autoload.php';
+
+if (!file_exists($autoload)) {
+    fwrite(STDERR, "folk-server: vendor/autoload.php not found.\n");
+    exit(1);
+}
+
+require $autoload;
+
+$configPath = $argv[1] ?? 'folk.toml';
+
+if (!function_exists('folk_version')) {
+    fwrite(STDERR, "Error: folk extension is not loaded.\n");
+    exit(1);
+}
+
+// ZTS worker threads already have bridge state; skip server start.
+if (!folk_is_worker_thread()) {
+    $server = new Folk\Server($configPath);
+    $server->start();
+}
+
+// Bootstrap Spiral application
+$container = new \Spiral\Core\Container();
+$app = \App\Application\Kernel::create(
+    directories: ['root' => getcwd()],
+    container: $container,
+);
+$result = $app->run();
+if ($result === null) {
+    // Spiral caught an exception during bootstrap
+    // Fallback: create minimal app without failing bootloaders
+    error_log('folk-server: Spiral bootstrap failed, trying minimal boot');
+}
+
+// Register Folk handlers
+\Folk\Spiral\FolkBootstrap::register($container);
+
+// Enter worker loop
+$loop = new \Folk\Sdk\Worker\WorkerLoop();
+
+if (isset($GLOBALS['folk_worker_boot_hook'])) {
+    ($GLOBALS['folk_worker_boot_hook'])($loop);
+}
+
+$loop->run();

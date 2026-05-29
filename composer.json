@@ -1,0 +1,45 @@
+{
+    "name": "folk/spiral",
+    "description": "Spiral Framework integration for Folk application server",
+    "type": "library",
+    "license": "MIT",
+    "homepage": "https://github.com/Folk-Project/folk-spiral",
+    "keywords": ["folk", "php", "spiral", "server"],
+    "authors": [
+        { "name": "Folk Contributors" }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "folk/sdk": "^0.2.4",
+        "spiral/core": "^3.0",
+        "spiral/http": "^3.0",
+        "spiral/boot": "^3.0",
+        "psr/http-factory": "^1.0"
+    },
+    "require-dev": {
+        "spiral/framework": "^3.0",
+        "phpunit/phpunit": "^11.0",
+        "phpstan/phpstan": "^2.0",
+        "spiral/code-style": "^2.3"
+    },
+    "autoload": {
+        "psr-4": { "Folk\\Spiral\\": "src/" }
+    },
+    "autoload-dev": {
+        "psr-4": { "Folk\\Spiral\\Tests\\": "tests/" }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/Folk-Project/folk-sdk"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "bin": ["bin/folk-server"],
+    "config": {
+        "allow-plugins": {
+            "spiral/composer-publish-plugin": true
+        }
+    }
+}
