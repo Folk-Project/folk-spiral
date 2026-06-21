@@ -19,6 +19,20 @@ final class FolkBootstrap
         }
 
         $GLOBALS['folk_worker_boot_hook'] = static function (HandlerLoop $loop) use ($container): void {
+            // Stamp request_id onto application logs for correlation with Folk's
+            // Rust-side access log. Only applies when the default logger is Monolog;
+            // reads the id at log time, so nothing to reset between requests.
+            try {
+                if ($container->has(\Psr\Log\LoggerInterface::class)) {
+                    $logger = $container->get(\Psr\Log\LoggerInterface::class);
+                    if ($logger instanceof \Monolog\Logger) {
+                        $logger->pushProcessor(new Log\FolkRequestIdProcessor());
+                    }
+                }
+            } catch (\Throwable) {
+                // Logger integration is optional — never fail the worker bootstrap
+            }
+
             // HTTP handler
             $loop->registerHttpHandler(
                 new Handler\SpiralHttpHandler($container),

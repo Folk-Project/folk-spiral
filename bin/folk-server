@@ -16,11 +16,10 @@ if (!file_exists($autoload)) {
     exit(1);
 }
 
-require $autoload;
+// Set CWD to project root BEFORE autoload (ZTS workers may have wrong CWD)
+chdir(dirname($autoload, 2));
 
-// Ensure CWD is project root (ZTS workers may inherit vendor/bin/ as CWD)
-$projectRoot = dirname($autoload, 2);
-chdir($projectRoot);
+require $autoload;
 
 $configPath = $argv[1] ?? 'folk.toml';
 
