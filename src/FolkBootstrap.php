@@ -33,9 +33,10 @@ final class FolkBootstrap
                 // Logger integration is optional — never fail the worker bootstrap
             }
 
-            // HTTP handler
+            // HTTP handler — streaming size limit from env (0 = unlimited).
+            $maxBytes = (int) (getenv('FOLK_STREAM_MAX_BYTES') ?: 0);
             $loop->registerHttpHandler(
-                new Handler\SpiralHttpHandler($container),
+                new Handler\SpiralHttpHandler($container, $maxBytes),
             );
 
             // Jobs handler
@@ -62,6 +63,7 @@ final class FolkBootstrap
 
             // Resetters — run between requests
             $loop->registerResetter(new Reset\FinalizerResetter($container));
+            $loop->registerResetter(new \Folk\Sdk\Reset\TempUploadResetter());
 
             if ($container->has(\Cycle\ORM\ORMInterface::class)) {
                 $loop->registerResetter(new Reset\CycleResetter($container));
