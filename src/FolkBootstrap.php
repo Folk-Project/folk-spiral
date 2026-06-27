@@ -39,10 +39,20 @@ final class FolkBootstrap
                 new Handler\SpiralHttpHandler($container, $maxBytes),
             );
 
-            // Jobs handler
-            $loop->registerJobsHandler(
-                new Jobs\SpiralJobHandler($container),
-            );
+            // Jobs handler — prefer the native Spiral queue bridge (resolve via
+            // HandlerRegistryInterface) when spiral/queue is available; fall back
+            // to the bespoke container-resolved handler otherwise.
+            if ($container->has(\Spiral\Queue\HandlerRegistryInterface::class)) {
+                $loop->registerJobsHandler(
+                    new Jobs\FolkQueueHandler(
+                        $container->get(\Spiral\Queue\HandlerRegistryInterface::class),
+                    ),
+                );
+            } else {
+                $loop->registerJobsHandler(
+                    new Jobs\SpiralJobHandler($container),
+                );
+            }
 
             // gRPC handler (if services configured)
             $grpcServices = [];

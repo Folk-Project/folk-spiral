@@ -7,9 +7,10 @@ namespace Folk\Spiral\Jobs;
 /**
  * Push jobs to Folk's jobs plugin via folk_call().
  *
- * Usage from Spiral application code:
- *   $queue = new FolkQueue();
- *   $queue->push('default', App\Job\SendEmail::class, ['to' => 'user@example.com']);
+ * @deprecated since 0.1.5 — prefer the native Spiral queue driver
+ *             ({@see FolkQueueDriver} bound via {@see FolkQueueBootloader}) and
+ *             inject `Spiral\Queue\QueueInterface`. This bespoke helper remains
+ *             as a low-level fallback for apps without spiral/queue.
  */
 final class FolkQueue
 {
