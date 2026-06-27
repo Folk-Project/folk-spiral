@@ -7,7 +7,7 @@ namespace Folk\Spiral\Jobs;
 /**
  * Push jobs to Folk's jobs plugin via folk_call().
  *
- * @deprecated since 0.1.5 — prefer the native Spiral queue driver
+ * @deprecated since 0.1.6 — prefer the native Spiral queue driver
  *             ({@see FolkQueueDriver} bound via {@see FolkQueueBootloader}) and
  *             inject `Spiral\Queue\QueueInterface`. This bespoke helper remains
  *             as a low-level fallback for apps without spiral/queue.
