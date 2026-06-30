@@ -1,9 +1,9 @@
 <?php
 /**
- * Folk server entry point for Spiral Framework (extension mode).
+ * Folk server entry point for Spiral Framework (extension mode, fork-after-warm).
  *
- * Main thread: boots Spiral, starts Folk server, enters worker loop.
- * ZTS worker threads: skip server start (bridge state already initialized).
+ * Master: boot Spiral once + register handlers, then serveForked() forks N
+ * worker processes (CoW-shared warm interpreter) and supervises them.
  */
 
 declare(strict_types=1);
@@ -16,7 +16,7 @@ if (!file_exists($autoload)) {
     exit(1);
 }
 
-// Set CWD to project root BEFORE autoload (ZTS workers may have wrong CWD)
+// Set CWD to project root before autoload / bootstrap / fork.
 chdir(dirname($autoload, 2));
 
 require $autoload;
@@ -28,13 +28,7 @@ if (!function_exists('folk_version')) {
     exit(1);
 }
 
-// ZTS worker threads already have bridge state; skip server start.
-if (!folk_is_worker_thread()) {
-    $server = new Folk\Server($configPath);
-    $server->start();
-}
-
-// Bootstrap Spiral application
+// Bootstrap Spiral application once in the master.
 $container = new \Spiral\Core\Container();
 $app = \App\Application\Kernel::create(
     directories: ['root' => dirname($autoload, 2)],
@@ -45,11 +39,13 @@ $app->run();
 // Register Folk handlers
 \Folk\Spiral\FolkBootstrap::register($container);
 
-// Enter worker loop
+// Create the worker loop and register handlers.
 $loop = new \Folk\Sdk\Worker\WorkerLoop();
 
 if (isset($GLOBALS['folk_worker_boot_hook'])) {
     ($GLOBALS['folk_worker_boot_hook'])($loop);
 }
 
-$loop->run();
+// Fork-after-warm: install the dispatch fn, then fork workers + supervise.
+$server = new Folk\Server($configPath);
+$server->serveForked($loop->prepareDispatch());
