@@ -81,6 +81,13 @@ final class SpiralHttpHandler implements HttpModeHandler
             $psrRequest = $psrRequest->withHeader($name, $value);
         }
 
+        // PSR-7 does not derive cookie params from the Cookie header; set them
+        // explicitly or sessions/auth break on a warm worker (folk-releases #86).
+        $cookies = \Folk\Sdk\Http\CookieParser::fromHeaders($request->headers);
+        if ($cookies !== []) {
+            $psrRequest = $psrRequest->withCookieParams($cookies);
+        }
+
         if ($request->multipart) {
             $streamed = new StreamedBody(StreamedBody::resolveLimit($request->uri, $this->maxRequestBytes, $this->pathLimits));
             $streamed->drainMultipart();
@@ -131,7 +138,13 @@ final class SpiralHttpHandler implements HttpModeHandler
     {
         $headers = [];
         foreach ($response->getHeaders() as $name => $values) {
-            $headers[$name] = \implode(', ', $values);
+            // Set-Cookie stays a list — one header per cookie; comma-joining
+            // corrupts cookies and the HTTP plugin emits each entry separately (#86).
+            if (\strcasecmp((string) $name, 'set-cookie') === 0) {
+                $headers[$name] = \array_values($values);
+            } else {
+                $headers[$name] = \implode(', ', $values);
+            }
         }
 
         $body = $response->getBody();

@@ -10,7 +10,7 @@
     ],
     "require": {
         "php": ">=8.2",
-        "folk/sdk": "^0.4.0",
+        "folk/sdk": "^0.4.1",
         "spiral/core": "^3.0",
         "spiral/http": "^3.0",
         "spiral/boot": "^3.0",
